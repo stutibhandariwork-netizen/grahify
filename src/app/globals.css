@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+/* Grahify: warm parchment by day, deep indigo night sky after dark. Saffron-gold accents. */
+:root {
+  --bg: #fbf6ee;
+  --surface: #ffffff;
+  --surface-2: #f4ecdf;
+  --ink: #2a2135;
+  --muted: #6e6377;
+  --line: #e6dac8;
+  --primary: #4a3a7a;
+  --primary-ink: #ffffff;
+  --accent: #b97a1f;
+  --accent-soft: #f6e6c8;
+  --good: #3f7d58;
+  --warn: #a8571f;
+  --warn-soft: #fbe9da;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14111f;
+    --surface: #1c1830;
+    --surface-2: #241f3b;
+    --ink: #f1eadf;
+    --muted: #a9a0b8;
+    --line: #322b4d;
+    --primary: #b9a6f2;
+    --primary-ink: #17132a;
+    --accent: #e5b45e;
+    --accent-soft: #3a2f22;
+    --good: #8cc9a2;
+    --warn: #f0a46c;
+    --warn-soft: #3b261b;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --font-sans: var(--font-body), system-ui, sans-serif;
+  --font-display: var(--font-display), Georgia, serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A faint starfield behind everything, visible mainly in dark mode. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 51%),
+    radial-gradient(1px 1px at 72% 9%, color-mix(in srgb, var(--accent) 35%, transparent) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 88% 42%, color-mix(in srgb, var(--primary) 35%, transparent) 50%, transparent 51%),
+    radial-gradient(1px 1px at 33% 64%, color-mix(in srgb, var(--accent) 30%, transparent) 50%, transparent 51%),
+    radial-gradient(1px 1px at 58% 86%, color-mix(in srgb, var(--primary) 30%, transparent) 50%, transparent 51%);
+  opacity: 0.6;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface p-5;
+  }
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-ink transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line px-5 text-sm font-medium text-ink transition hover:bg-surface-2;
+  }
+  .field {
+    @apply block w-full rounded-xl border border-line bg-surface px-4 py-3 text-base text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  .hint {
+    @apply mt-1.5 text-xs text-muted;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-muted;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold tracking-[0.14em] text-accent uppercase;
+  }
+  .prose-grahify {
+    @apply flex flex-col gap-3 text-[15px] leading-relaxed;
+  }
+  .prose-grahify strong {
+    @apply font-semibold text-ink;
+  }
+  .prose-grahify ul {
+    @apply list-disc space-y-1 pl-5;
+  }
+}

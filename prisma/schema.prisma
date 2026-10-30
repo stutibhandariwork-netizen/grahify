@@ -1,0 +1,254 @@
+// Grahify data model. Fields ending in `Enc` hold AES-256-GCM ciphertext
+// (see src/lib/crypto.ts); they are never queried directly.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Section {
+  ASTROLOGY_BASE
+  ASTROLOGY_DEEP_DIVE
+  WEEKLY_TRANSIT
+  AFFIRMATION
+  TAROT
+  NUMEROLOGY
+  ANSWER
+  FREE
+}
+
+enum LifeArea {
+  CAREER
+  MONEY
+  LOVE
+  HEALTH
+}
+
+enum TarotSpread {
+  THREE_CARD
+  CARD_OF_DAY
+  YES_NO
+  LOVE
+  CAREER
+  MONEY
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?   // required by Auth.js; we keep real names encrypted in Profile
+  image         String?
+  language      String    @default("en") // BCP-47: en, hi, or, ...
+  timezone      String    @default("Asia/Kolkata") // IANA, for scheduling
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts   Account[]
+  sessions   Session[]
+  profiles   Profile[]
+  readings   Reading[]
+  journal    JournalEntry[]
+  threads    ChatThread[]
+  whatsapp   WhatsAppSubscription?
+}
+
+// --- Auth.js (magic-link sign-in, database sessions) ---
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// --- App data ---
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPrimary       Boolean  @default(true)
+
+  // Encrypted JSON: { name, birthDateLocal, birthTimeLocal|null, timeKnown,
+  //                   place: { label, lat, lon, tz } }
+  birthDataEnc    Bytes
+
+  // Encrypted NatalChart JSON from the engine
+  chartEnc        Bytes
+  engineVersion   String
+
+  // Non-identifying derived fields, kept plain for scheduled jobs
+  moonSign        Int      // 0-11
+  lagnaSign       Int?     // null when birth time unknown
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  readings        Reading[]
+  tarotSessions   TarotSession[]
+  affirmations    DailyAffirmation[]
+
+  @@index([userId])
+}
+
+model Reading {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId        String?
+  profile          Profile?  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  section          Section
+  lifeArea         LifeArea?
+  periodStart      DateTime? // e.g. week start for WEEKLY_TRANSIT
+  periodEnd        DateTime?
+  language         String
+  inputJsonEnc     Bytes     // exactly what the LLM saw
+  contentEnc       Bytes     // generated markdown
+  model            String
+  promptVersion    String
+  translatedFromId String?
+  translatedFrom   Reading?  @relation("Translations", fields: [translatedFromId], references: [id], onDelete: Cascade)
+  translations     Reading[] @relation("Translations")
+  createdAt        DateTime  @default(now())
+
+  journal          JournalEntry[]
+  tarotSession     TarotSession?
+
+  @@index([userId, section, createdAt])
+  @@index([profileId, section, periodStart])
+}
+
+model TarotSession {
+  id         String      @id @default(cuid())
+  profileId  String
+  profile    Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  spread     TarotSpread
+  question   String?
+  deckOrder  Int[]       // 78 card ids, fixed BEFORE picks
+  reversals  Boolean[]   // parallel to deckOrder
+  picks      Int[]       // positions (1-78) chosen by the user, in order
+  clarifiers Json        @default("[]") // [{ forPickIndex, position }]
+  readingId  String?     @unique
+  reading    Reading?    @relation(fields: [readingId], references: [id], onDelete: SetNull)
+  createdAt  DateTime    @default(now())
+}
+
+model DailyAffirmation {
+  id         String   @id @default(cuid())
+  profileId  String
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  date       DateTime @db.Date // in the user's timezone
+  language   String
+  text       String
+  why        String
+  createdAt  DateTime @default(now())
+
+  @@unique([profileId, date, language])
+}
+
+model ChatThread {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  createdAt DateTime      @default(now())
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id         String     @id @default(cuid())
+  threadId   String
+  thread     ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role       String     // user | assistant
+  contentEnc Bytes
+  basis      Json?      // { planets: [...], periods: [...], tarot?, numerology? }
+  createdAt  DateTime   @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readingId String?
+  reading   Reading? @relation(fields: [readingId], references: [id], onDelete: SetNull)
+  section   Section
+  // What the note is attached to: "tarot" (session id), "affirmation" (YYYY-MM-DD),
+  // "weekly" (week start date), "area" (career|money|love|health), "chart", "numerology",
+  // "answer" (chat message id). Null for free writing.
+  linkType  String?
+  linkId    String?
+  prompt    String?  // daily transit prompt, if answered
+  // Encrypted JSON: { text, link?: { title, snapshot } }. The snapshot keeps what the
+  // reading said at the time, so the timeline can show it next to the note later.
+  bodyEnc   Bytes
+  entryDate DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, entryDate])
+  @@index([userId, section])
+  @@index([userId, linkType, linkId])
+}
+
+model WhatsAppSubscription {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneEnc      Bytes
+  phoneHash     String    @unique // HMAC, to match inbound STOP messages
+  optedInAt     DateTime
+  optInSource   String    // "signup" | "settings"
+  optInText     String    // the exact consent wording shown
+  optedOutAt    DateTime?
+  weekly        Boolean   @default(true)
+  daily         Boolean   @default(false)
+  dailyTime     String?   // "07:30" in user timezone
+  logs          MessageLog[]
+}
+
+model MessageLog {
+  id             String               @id @default(cuid())
+  subscriptionId String
+  subscription   WhatsAppSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  template       String
+  language       String
+  providerId     String?
+  status         String               // queued | sent | delivered | failed
+  createdAt      DateTime             @default(now())
+}

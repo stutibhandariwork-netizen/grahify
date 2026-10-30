@@ -1,0 +1,27 @@
+<svg style="color:#3b2a1a;background:#fbf6ee" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" fill="none" stroke="currentColor"><title>Test case: 21 Jan 2000, 12:46 IST, Cuttack</title>
+<style>text{fill:currentColor;stroke:none;font-family:system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle}.sign{font-size:11px;opacity:.55}.pl{font-size:12px;font-weight:600}</style>
+<rect x="1" y="1" width="398" height="398" stroke-width="2"/>
+<path d="M1 1L399 399M399 1L1 399M200 1L399 200L200 399L1 200Z" stroke-width="1.5"/>
+<text x="200" y="182" class="sign">2</text>
+<text x="200" y="105" class="pl">Asc 0°</text>
+<text x="100" y="82" class="sign">3</text>
+<text x="82" y="100" class="sign">4</text>
+<text x="45" y="92.5" class="pl">Mo8°</text>
+<text x="45" y="107.5" class="pl">Ra10°</text>
+<text x="182" y="200" class="sign">5</text>
+<text x="82" y="300" class="sign">6</text>
+<text x="100" y="318" class="sign">7</text>
+<text x="200" y="218" class="sign">8</text>
+<text x="300" y="318" class="sign">9</text>
+<text x="300" y="355" class="pl">Ve1°</text>
+<text x="318" y="300" class="sign">10</text>
+<text x="355" y="285" class="pl">Su6°</text>
+<text x="355" y="300" class="pl">Me10°ᶜ</text>
+<text x="355" y="315" class="pl">Ke10°</text>
+<text x="218" y="200" class="sign">11</text>
+<text x="295" y="200" class="pl">Ma19°</text>
+<text x="318" y="100" class="sign">12</text>
+<text x="300" y="82" class="sign">1</text>
+<text x="300" y="37.5" class="pl">Ju2°</text>
+<text x="300" y="52.5" class="pl">Sa16°</text>
+</svg>
