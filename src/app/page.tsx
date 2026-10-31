@@ -5,7 +5,8 @@ import { prisma } from "@/lib/db";
 import { loadPrimaryProfile, type LanguageCode } from "@/lib/profile";
 import { HomeDashboard } from "./home-dashboard";
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
+  const { deleted } = await searchParams;
   const session = await auth();
   if (session?.user?.id) {
     const [profile, user] = await Promise.all([
@@ -18,6 +19,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col gap-10 pt-10">
+      {deleted && <p className="rounded-xl bg-accent-soft px-4 py-3 text-sm">Your account and all its data have been deleted.</p>}
       <section className="flex flex-col gap-5">
         <p className="eyebrow">Astrology · Tarot · Numerology</p>
         <h1 className="font-display text-4xl leading-[1.1] font-semibold tracking-tight sm:text-5xl">

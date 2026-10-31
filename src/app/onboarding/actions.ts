@@ -119,19 +119,28 @@ async function validateAndSave(raw: Record<string, string>): Promise<ProfileForm
   };
 
   await prisma.$transaction(async (tx) => {
-    await tx.user.update({ where: { id: userId }, data: { language: input.language, timezone: place.timeZone } });
-    await tx.profile.deleteMany({ where: { userId, isPrimary: true } });
-    await tx.profile.create({
-      data: {
-        userId,
-        isPrimary: true,
-        birthDataEnc: encryptJson(birth),
-        chartEnc: encryptJson(chart),
-        engineVersion: ENGINE_VERSION,
-        moonSign: chart.planets.Moon.sign,
-        lagnaSign: chart.lagna?.sign ?? null,
-      },
-    });
+    const existing = await tx.profile.findFirst({ where: { userId, isPrimary: true }, select: { id: true } });
+    const chartData = {
+      birthDataEnc: encryptJson(birth),
+      chartEnc: encryptJson(chart),
+      engineVersion: ENGINE_VERSION,
+      moonSign: chart.planets.Moon.sign,
+      lagnaSign: chart.lagna?.sign ?? null,
+    };
+    if (existing) {
+      // Editing: keep the profile (and its tarot readings and journal), but drop
+      // everything computed from the old chart so it is rewritten for the new one.
+      await tx.user.update({ where: { id: userId }, data: { language: input.language } });
+      await tx.profile.update({ where: { id: existing.id }, data: chartData });
+      await tx.reading.deleteMany({
+        where: { profileId: existing.id, section: { in: ["ASTROLOGY_BASE", "ASTROLOGY_DEEP_DIVE", "WEEKLY_TRANSIT", "NUMEROLOGY"] } },
+      });
+      await tx.dailyAffirmation.deleteMany({ where: { profileId: existing.id } });
+    } else {
+      // First time: the birthplace's zone is a sensible default for "where you live"; it can be changed in settings.
+      await tx.user.update({ where: { id: userId }, data: { language: input.language, timezone: place.timeZone } });
+      await tx.profile.create({ data: { userId, isPrimary: true, ...chartData } });
+    }
     if (phone) {
       const now = new Date();
       await tx.whatsAppSubscription.upsert({

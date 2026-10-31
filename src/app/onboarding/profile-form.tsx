@@ -7,14 +7,20 @@ import { PlacePicker } from "./place-picker";
 interface Props {
   languages: readonly { code: string; label: string }[];
   optInText: string;
+  /** Existing values when editing (form field name → value). */
+  initial?: Record<string, string>;
+  initialPlace?: { id: number; label: string; timeZone: string };
+  /** WhatsApp is managed on the settings page once a profile exists. */
+  showWhatsApp?: boolean;
+  submitLabel?: string;
 }
 
-export function ProfileForm({ languages, optInText }: Props) {
+export function ProfileForm({ languages, optInText, initial, initialPlace, showWhatsApp = true, submitLabel = "Calculate my chart" }: Props) {
   const [state, action, pending] = useActionState<ProfileFormState, FormData>(saveProfile, {});
-  const [timeUnknown, setTimeUnknown] = useState(false);
+  const [timeUnknown, setTimeUnknown] = useState(initial?.timeUnknown === "on");
   const [phone, setPhone] = useState("");
   const e = state.errors ?? {};
-  const v = state.values ?? {};
+  const v = state.values ?? initial ?? {};
 
   return (
     <form action={action} className="flex flex-col gap-6">
@@ -68,7 +74,7 @@ export function ProfileForm({ languages, optInText }: Props) {
         </label>
       </div>
 
-      <PlacePicker error={e.place} />
+      <PlacePicker error={e.place} initial={initialPlace} />
 
       {state.timeChoice && (
         <fieldset className="rounded-2xl border border-accent bg-accent-soft p-4">
@@ -104,6 +110,7 @@ export function ProfileForm({ languages, optInText }: Props) {
         </select>
       </div>
 
+      {showWhatsApp && (
       <div className="card flex flex-col gap-3 bg-surface-2">
         <div>
           <label htmlFor="whatsapp" className="label">
@@ -135,9 +142,10 @@ export function ProfileForm({ languages, optInText }: Props) {
         </label>
         <p className="text-xs text-muted">We only keep your number if you tick the box. You can change this in settings.</p>
       </div>
+      )}
 
       <button className="btn" disabled={pending}>
-        {pending ? "Calculating your chart…" : "Calculate my chart"}
+        {pending ? "Calculating your chart…" : submitLabel}
       </button>
       <p className="text-center text-xs text-muted">Your birth details are encrypted and never shared.</p>
     </form>

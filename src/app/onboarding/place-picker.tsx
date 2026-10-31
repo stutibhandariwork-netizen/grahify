@@ -9,11 +9,11 @@ interface PlaceOption {
 }
 
 /** Birthplace combobox backed by /api/places. Submits the chosen place id as `placeId`. */
-export function PlacePicker({ error }: { error?: string }) {
+export function PlacePicker({ error, initial }: { error?: string; initial?: PlaceOption }) {
   const listId = useId();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initial?.label ?? "");
   const [options, setOptions] = useState<PlaceOption[]>([]);
-  const [selected, setSelected] = useState<PlaceOption | null>(null);
+  const [selected, setSelected] = useState<PlaceOption | null>(initial ?? null);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
